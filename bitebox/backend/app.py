@@ -11,9 +11,9 @@ from reportlab.lib import colors
 import json
 import random
 import requests
+from sqlalchemy import desc
 
-# FIX: Changed relative import '.models' to absolute import 'models'
-from models import db, User, HealthProfile, MenuItem, Order, OrderItem, Invoice, SubscriptionPlan, Subscription, ParentalControl, Gamification, Notification, Feedback, Analytics
+from .models import db, User, HealthProfile, MenuItem, Order, OrderItem, Invoice, SubscriptionPlan, Subscription, ParentalControl, Gamification, Notification, Feedback, Analytics
 
 app = Flask(__name__, template_folder='../frontend', static_folder='../frontend/static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'bitebox-secret-key-2024')
@@ -41,8 +41,7 @@ db.init_app(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-# FIX: Set the login view name as a string, no need for the type: ignore comment
-login_manager.login_view = 'login_page'
+login_manager.login_view = 'login_page'  # type: ignore
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -556,7 +555,7 @@ def get_analytics():
     item_sales = db.session.query(
         MenuItem.name,
         db.func.sum(OrderItem.quantity).label('total_sold')
-    ).join(OrderItem).group_by(MenuItem.id).order_by(db.desc('total_sold')).limit(10).all()
+    ).join(OrderItem).group_by(MenuItem.id).order_by(desc('total_sold')).limit(10).all()
     
     low_stock = MenuItem.query.filter(MenuItem.stock < 10).all()
     
@@ -1137,11 +1136,8 @@ def generate_admin_report(report_type):
 @app.route('/api/ai/chat', methods=['POST'])
 @login_required
 def ai_chat():
-    try:
-        from google import genai
-    except ImportError:
-        return jsonify({'error': 'The google-genai library is not installed.'}), 500
-
+    from google import genai
+    
     data = request.json
     user_message = data.get('message', '')
     
@@ -1150,7 +1146,6 @@ def ai_chat():
     
     try:
         # Initialize Gemini client
-        # WARNING: Storing API key directly in code is a security risk. Use environment variables.
         client = genai.Client(api_key="AIzaSyBONjV4J1h3W-4xQeO7wgkBLxqnp8nCh3g")
         
         # Get user's health profile for context
@@ -1211,5 +1206,4 @@ def manage_feedback():
     } for f in feedbacks])
 
 if __name__ == '__main__':
-    # You might want to remove debug=True in a production environment
     app.run(host='0.0.0.0', port=5000, debug=True)
