@@ -11,7 +11,6 @@ from reportlab.lib import colors
 import json
 import random
 import requests
-from sqlalchemy import desc
 
 from .models import db, User, HealthProfile, MenuItem, Order, OrderItem, Invoice, SubscriptionPlan, Subscription, ParentalControl, Gamification, Notification, Feedback, Analytics
 
@@ -555,7 +554,7 @@ def get_analytics():
     item_sales = db.session.query(
         MenuItem.name,
         db.func.sum(OrderItem.quantity).label('total_sold')
-    ).join(OrderItem).group_by(MenuItem.id).order_by(desc('total_sold')).limit(10).all()
+    ).join(OrderItem).group_by(MenuItem.id).order_by(db.desc('total_sold')).limit(10).all()
     
     low_stock = MenuItem.query.filter(MenuItem.stock < 10).all()
     
